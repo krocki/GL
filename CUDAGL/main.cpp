@@ -84,7 +84,7 @@ GLuint shDraw;
 
 ////////////////////////////////////////////////////////////////////////////////
 extern "C" void launch_cudainit(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw);
-extern "C" void launch_cudaProcess(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw);
+extern "C" void launch_process(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw);
 
 // Forward declarations
 void renderloop(int argc, char **argv);
@@ -210,7 +210,7 @@ void generateCUDAImage(int init)
     dim3 grid(16, 16, 1);
     // execute CUDA kernel
     if (init == 1) launch_cudainit(grid, block, 0, out_data, image_width);
-    else        launch_cudaProcess(grid, block, 0, out_data, image_width);
+    else        launch_process(grid, block, 0, out_data, image_width);
 
     // CUDA generated data in cuda memory or in a mapped PBO made of BGRA 8 bits
     // 2 solutions, here :
@@ -434,7 +434,7 @@ void FreeResource()
     }
 
     // finalize logs and leave
-    printf("simpleCUDA2GL Exiting...\n");
+    printf("gameoflife Exiting...\n");
 }
 
 void Cleanup(int iExitCode)
