@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "helper_string.h"
+//#include "helper_string.h"
 
 #ifndef EXIT_WAIVED
 #define EXIT_WAIVED 2
@@ -756,32 +756,33 @@ inline int gpuGetMaxGflopsDeviceId() {
 
 // Initialization code to find the best CUDA Device
 inline int findCudaDevice(int argc, const char **argv) {
-  cudaDeviceProp deviceProp;
+  //cudaDeviceProp deviceProp;
   int devID = 0;
 
   // If the command-line has a device number specified, use it
-  if (checkCmdLineFlag(argc, argv, "device")) {
-    devID = getCmdLineArgumentInt(argc, argv, "device=");
 
-    if (devID < 0) {
-      printf("Invalid command line parameter\n ");
-      exit(EXIT_FAILURE);
-    } else {
-      devID = gpuDeviceInit(devID);
+  //if (checkCmdLineFlag(argc, argv, "device")) {
+  //  devID = getCmdLineArgumentInt(argc, argv, "device=");
 
-      if (devID < 0) {
-        printf("exiting...\n");
-        exit(EXIT_FAILURE);
-      }
-    }
-  } else {
-    // Otherwise pick the device with highest Gflops/s
-    devID = gpuGetMaxGflopsDeviceId();
-    checkCudaErrors(cudaSetDevice(devID));
-    checkCudaErrors(cudaGetDeviceProperties(&deviceProp, devID));
-    printf("GPU Device %d: \"%s\" with compute capability %d.%d\n\n", devID,
-           deviceProp.name, deviceProp.major, deviceProp.minor);
-  }
+  //  if (devID < 0) {
+  //    printf("Invalid command line parameter\n ");
+  //    exit(EXIT_FAILURE);
+  //  } else {
+  //    devID = gpuDeviceInit(devID);
+
+  //    if (devID < 0) {
+  //      printf("exiting...\n");
+  //      exit(EXIT_FAILURE);
+  //    }
+  //  }
+  //} else {
+  //  // Otherwise pick the device with highest Gflops/s
+  //  devID = gpuGetMaxGflopsDeviceId();
+  //  checkCudaErrors(cudaSetDevice(devID));
+  //  checkCudaErrors(cudaGetDeviceProperties(&deviceProp, devID));
+  //  printf("GPU Device %d: \"%s\" with compute capability %d.%d\n\n", devID,
+  //         deviceProp.name, deviceProp.major, deviceProp.minor);
+  //}
 
   return devID;
 }

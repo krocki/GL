@@ -480,35 +480,35 @@ main(int argc, char **argv)
 
     printf("%s Starting...\n\n", argv[0]);
 
-    if (checkCmdLineFlag(argc, (const char **)argv, "file"))
-    {
+    //if (checkCmdLineFlag(argc, (const char **)argv, "file"))
+    //{
 
-        getCmdLineArgumentString(argc, (const char **)argv, "file", &ref_file);
-    }
+    //    getCmdLineArgumentString(argc, (const char **)argv, "file", &ref_file);
+    //}
 
     pArgc = &argc;
     pArgv = argv;
 
     // use command-line specified CUDA device, otherwise use device with highest Gflops/s
-    if (checkCmdLineFlag(argc, (const char **)argv, "device"))
-    {
-        printf("[%s]\n", argv[0]);
-        printf("   Does not explicitly support -device=n\n");
-        printf("   This sample requires OpenGL.  Only -file=<reference> are supported\n");
-        printf("exiting...\n");
-        exit(EXIT_WAIVED);
-    }
+    //if (checkCmdLineFlag(argc, (const char **)argv, "device"))
+    //{
+    //    printf("[%s]\n", argv[0]);
+    //    printf("   Does not explicitly support -device=n\n");
+    //    printf("   This sample requires OpenGL.  Only -file=<reference> are supported\n");
+    //    printf("exiting...\n");
+    //    exit(EXIT_WAIVED);
+    //}
 
-    if (ref_file)
-    {
-        printf("(Test with OpenGL verification)\n");
+    //if (ref_file)
+    //{
+    //    printf("(Test with OpenGL verification)\n");
+    //    runStdProgram(argc, argv);
+    //}
+    //else
+    //{
+    //    printf("(Interactive OpenGL Demo)\n");
         runStdProgram(argc, argv);
-    }
-    else
-    {
-        printf("(Interactive OpenGL Demo)\n");
-        runStdProgram(argc, argv);
-    }
+    //}
 
     exit(EXIT_SUCCESS);
 }
