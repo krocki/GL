@@ -40,7 +40,7 @@
 
 // CUDA utilities and system includes
 #include "helper_cuda.h"
-#include "helper_functions.h"
+//#include "helper_functions.h"
 //#include "rendercheck_gl.h"
 
 // Shared Library Test Functions
@@ -93,7 +93,7 @@ char **pArgv = NULL;
 // Timer
 static int fpsCount = 0;
 static int fpsLimit = 1;
-StopWatchInterface *timer = NULL;
+//StopWatchInterface *timer = NULL;
 
 #ifndef USE_TEXTURE_RGBA8UI
 #   pragma message("Note: Using Texture fmt GL_RGBA16F_ARB")
@@ -326,7 +326,7 @@ void displayImage(GLuint texture)
 void
 display()
 {
-    sdkStartTimer(&timer);
+    //sdkStartTimer(&timer);
 
     if (enable_cuda)
     {
@@ -337,7 +337,7 @@ display()
     // NOTE: I needed to add this call so the timing is consistent.
     // Need to investigate why
     cudaDeviceSynchronize();
-    sdkStopTimer(&timer);
+    //sdkStopTimer(&timer);
 
     // flip backbuffer
     glutSwapBuffers();
@@ -370,13 +370,13 @@ display()
     if (++fpsCount == fpsLimit)
     {
         char cTitle[256];
-        float fps = 1000.0f / sdkGetAverageTimerValue(&timer);
+        float fps = 1.0f; //1000.0f / sdkGetAverageTimerValue(&timer);
         sprintf(cTitle, "CUDA GL Post Processing (%d x %d): %.1f fps", window_width, window_height, fps);
         glutSetWindowTitle(cTitle);
         //printf("%s\n", cTitle);
         fpsCount = 0;
         fpsLimit = (int)((fps > 1.0f) ? fps : 1.0f);
-        sdkResetTimer(&timer);
+        //sdkResetTimer(&timer);
     }
 }
 
@@ -518,7 +518,7 @@ main(int argc, char **argv)
 ////////////////////////////////////////////////////////////////////////////////
 void FreeResource()
 {
-    sdkDeleteTimer(&timer);
+    //sdkDeleteTimer(&timer);
 
     // unregister this buffer object with CUDA
     //    checkCudaErrors(cudaGraphicsUnregisterResource(cuda_tex_screen_resource));
@@ -678,8 +678,8 @@ runStdProgram(int argc, char **argv)
     // Now initialize CUDA context (GL context has been created already)
     findCudaDevice(argc, (const char **)argv);
 
-    sdkCreateTimer(&timer);
-    sdkResetTimer(&timer);
+    //sdkCreateTimer(&timer);
+    //sdkResetTimer(&timer);
 
     // register callbacks
     glutDisplayFunc(display);
