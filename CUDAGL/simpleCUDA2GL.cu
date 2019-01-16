@@ -11,8 +11,6 @@
 
 // Utilities and system includes
 
-//#include "helper_cuda.h"
-
 // clamp x to range [a, b]
 __device__ float clamp(float x, float a, float b)
 {
@@ -33,8 +31,19 @@ __device__ int rgbToInt(float r, float g, float b)
     return (int(b)<<16) | (int(g)<<8) | int(r);
 }
 
-__global__ void
-cudaProcess(unsigned int *g_odata, int imgw)
+__global__ void cudainit(unsigned int *g_odata, int imgw) {
+
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
+    int bw = blockDim.x;
+    int bh = blockDim.y;
+    int x = blockIdx.x*bw + tx;
+    int y = blockIdx.y*bh + ty;
+
+    g_odata[y*imgw+x] = (tx + ty + bw + bh ) % 7 == 0 ? 0xffffffff : 0x00000000;
+}
+
+__global__ void cudaProcess(unsigned int *g_odata, int imgw)
 {
     extern __shared__ uchar4 sdata[];
 
@@ -47,19 +56,33 @@ cudaProcess(unsigned int *g_odata, int imgw)
 
     unsigned int in = g_odata[y*imgw+x];
     unsigned int out;
-    out = y*x+in;
+    unsigned int n=0;
 
-    //unsigned int out_idx = (in * 71) % (512 * 512);
-    //uchar4 out = in+1;
-    //uchar4 c4 = make_uchar4((x & 0x20)?100:0,0,(y & 0x20)?100:0,0);
+    // counting neighbors
+    if (y > 0        && x > 0        ) n += (g_odata[(y-1)*imgw+(x-1)] > 0) ? 1 : 0;
+    if (y > 0                        ) n += (g_odata[(y-1)*imgw+(x  )] > 0) ? 1 : 0;
+    if (y > 0        && x < (imgw-1) ) n += (g_odata[(y-1)*imgw+(x+1)] > 0) ? 1 : 0;
+    if (                x > 0        ) n += (g_odata[(y  )*imgw+(x-1)] > 0) ? 1 : 0;
+    if (                x < (imgw-1) ) n += (g_odata[(y  )*imgw+(x+1)] > 0) ? 1 : 0;
+    if (y < (imgw-1) && x > 0        ) n += (g_odata[(y+1)*imgw+(x-1)] > 0) ? 1 : 0;
+    if (y < (imgw-1)                 ) n += (g_odata[(y+1)*imgw+(x  )] > 0) ? 1 : 0;
+    if (y < (imgw-1) && x < (imgw-1) ) n += (g_odata[(y+1)*imgw+(x+1)] > 0) ? 1 : 0;
+
+    // rules of game of life
+    if (n < 2 || n > 3) out = 0;
+    else if (n == 3 && g_odata[(y)*imgw+(x)] == 0) out = 0xffffffff;
+    else out = in;
+
     g_odata[y*imgw+x] = out;//rgbToInt(c4.z, c4.y, c4.x);
-    //g_odata[out_idx] = out_idx;
 }
 
-extern "C" void
-launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
-                   unsigned int *g_odata,
-                   int imgw)
+extern "C" void launch_cudainit(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw)
+{
+    cudainit<<< grid, block, sbytes >>>(g_odata, imgw);
+
+}
+
+extern "C" void launch_cudaProcess(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw)
 {
     cudaProcess<<< grid, block, sbytes >>>(g_odata, imgw);
 

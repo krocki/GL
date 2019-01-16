@@ -83,10 +83,8 @@ GLuint shDraw;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" void
-launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
-                   unsigned int *g_odata,
-                   int imgw);
+extern "C" void launch_cudainit(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw);
+extern "C" void launch_cudaProcess(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw);
 
 // Forward declarations
 void renderloop(int argc, char **argv);
@@ -191,7 +189,7 @@ static const char *glsl_draw_fragshader_src =
 #endif
 
 // copy image and process using CUDA
-void generateCUDAImage()
+void generateCUDAImage(int init)
 {
     // run the Cuda kernel
     unsigned int *out_data;
@@ -211,8 +209,8 @@ void generateCUDAImage()
     //dim3 grid(image_width / block.x, image_height / block.y, 1);
     dim3 grid(16, 16, 1);
     // execute CUDA kernel
-    launch_cudaProcess(grid, block, 0, out_data, image_width);
-
+    if (init == 1) launch_cudainit(grid, block, 0, out_data, image_width);
+    else        launch_cudaProcess(grid, block, 0, out_data, image_width);
 
     // CUDA generated data in cuda memory or in a mapped PBO made of BGRA 8 bits
     // 2 solutions, here :
@@ -294,16 +292,15 @@ void displayImage(GLuint texture)
     SDK_CHECK_ERROR_GL();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//! Display callback
-////////////////////////////////////////////////////////////////////////////////
-void
-display()
+int init=1;
+
+void display()
 {
 
     if (enable_cuda)
     {
-        generateCUDAImage();
+        generateCUDAImage(init);
+        if (init) init=0;
         displayImage(tex_cudaResult);
     }
 
