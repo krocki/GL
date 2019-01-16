@@ -22,3 +22,9 @@ OpenGL examples
 `./gltest`
 
 <img src="gltest.png" />
+
+#### CUDA + OpenGL
+
+Create OpenGL texture (256 x 256), then create (256 x 256) grid of CUDA threads and run Conway's Game of Life on GPU
+
+<img src="./CUDAGL/gol.gif"/>
