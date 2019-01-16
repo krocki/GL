@@ -13,6 +13,17 @@
 #ifndef HELPER_GL_H
 #define HELPER_GL_H
 
+#ifdef __DRIVER_TYPES_H__
+#ifndef DEVICE_RESET
+#define DEVICE_RESET cudaDeviceReset();
+#endif
+#else
+#ifndef DEVICE_RESET
+#define DEVICE_RESET
+#endif
+#endif
+
+#define checkCudaErrors(x) do { (x); } while (0)
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
     #include <GL/glew.h>
 #endif

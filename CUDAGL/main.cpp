@@ -39,7 +39,7 @@
 #include <cuda_gl_interop.h>
 
 // CUDA utilities and system includes
-#include "helper_cuda.h"
+//#include "helper_cuda.h"
 //#include "helper_functions.h"
 //#include "rendercheck_gl.h"
 
@@ -676,7 +676,7 @@ runStdProgram(int argc, char **argv)
     }
 
     // Now initialize CUDA context (GL context has been created already)
-    findCudaDevice(argc, (const char **)argv);
+    //findCudaDevice(argc, (const char **)argv);
 
     //sdkCreateTimer(&timer);
     //sdkResetTimer(&timer);
