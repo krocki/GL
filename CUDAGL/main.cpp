@@ -1,27 +1,17 @@
-/*
- * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
- *
- * Please refer to the NVIDIA end user license agreement (EULA) associated
- * with this source code for terms and conditions that govern your use of
- * this software. Any use, reproduction, disclosure, or distribution of
- * this software and related documentation outside the terms of the EULA
- * is strictly prohibited.
- *
- */
-
-
+// kmrocki @ 1/15/19
+// based on CUDA SDK example
+//
 // USE_TEXSUBIMAGE2D uses glTexSubImage2D() to update the final result
 // commenting it will make the sample use the other way :
 // map a texture in CUDA and blit the result into it
 //#define USE_TEXSUBIMAGE2D
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#  define WINDOWS_LEAN_AND_MEAN
-#  define NOMINMAX
-#  include <windows.h>
-#pragma warning(disable:4996)
-#endif
+unsigned int window_width = 256;
+unsigned int window_height = 256;
+unsigned int image_width = 256;
+unsigned int image_height = 256;
 
+int iGLUTWindowHandle = 0;          // handle to the GLUT window
 // OpenGL Graphics includes
 #include "helper_gl.h"
 #if defined(__APPLE__) || defined(MACOSX)
@@ -38,29 +28,13 @@
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 
-// CUDA utilities and system includes
-//#include "helper_cuda.h"
-//#include "helper_functions.h"
-//#include "rendercheck_gl.h"
-
 // Shared Library Test Functions
 #define MAX_EPSILON 10
 #define REFRESH_DELAY     10 //ms
 
-const char *sSDKname = "simpleCUDA2GL";
+const char *window_name = "CUDA2GL";
 
 unsigned int g_TotalErrors = 0;
-
-// CheckFBO/BackBuffer class objects
-//CheckRender *g_CheckRender = NULL;
-
-////////////////////////////////////////////////////////////////////////////////
-// constants / global variables
-unsigned int window_width = 256;
-unsigned int window_height = 256;
-unsigned int image_width = 256;
-unsigned int image_height = 256;
-int iGLUTWindowHandle = 0;          // handle to the GLUT window
 
 // pbo and fbo variables
 #ifdef USE_TEXSUBIMAGE2D
@@ -115,7 +89,7 @@ launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
                    int imgw);
 
 // Forward declarations
-void runStdProgram(int argc, char **argv);
+void renderloop(int argc, char **argv);
 void FreeResource();
 void Cleanup(int iExitCode);
 
@@ -235,7 +209,7 @@ void generateCUDAImage()
     dim3 block(16, 16, 1);
     //dim3 block(16, 16, 1);
     //dim3 grid(image_width / block.x, image_height / block.y, 1);
-    dim3 grid(2, 2, 1);
+    dim3 grid(16, 16, 1);
     // execute CUDA kernel
     launch_cudaProcess(grid, block, 0, out_data, image_width);
 
@@ -326,7 +300,6 @@ void displayImage(GLuint texture)
 void
 display()
 {
-    //sdkStartTimer(&timer);
 
     if (enable_cuda)
     {
@@ -334,37 +307,10 @@ display()
         displayImage(tex_cudaResult);
     }
 
-    // NOTE: I needed to add this call so the timing is consistent.
-    // Need to investigate why
     cudaDeviceSynchronize();
-    //sdkStopTimer(&timer);
 
     // flip backbuffer
     glutSwapBuffers();
-
-    // If specified, Check rendering against reference,
-    //if (ref_file && g_CheckRender && g_CheckRender->IsQAReadback())
-    //{
-
-    //    static int pass = 0;
-
-    //    if (pass > 0)
-    //    {
-    //        g_CheckRender->readback(window_width, window_height);
-    //        char currentOutputPPM[256];
-    //        sprintf(currentOutputPPM, "kilt.ppm");
-    //        g_CheckRender->savePPM(currentOutputPPM, true, NULL);
-
-    //        if (!g_CheckRender->PPMvsPPM(currentOutputPPM, sdkFindFilePath(ref_file, pArgv[0]), MAX_EPSILON, 0.30f))
-    //        {
-    //            g_TotalErrors++;
-    //        }
-
-    //        Cleanup((g_TotalErrors==0) ? EXIT_SUCCESS : EXIT_FAILURE);
-    //    }
-
-    //    pass++;
-    //}
 
     // Update fps counter, fps/title display and log
     if (++fpsCount == fpsLimit)
@@ -373,24 +319,18 @@ display()
         float fps = 1.0f; //1000.0f / sdkGetAverageTimerValue(&timer);
         sprintf(cTitle, "CUDA GL Post Processing (%d x %d): %.1f fps", window_width, window_height, fps);
         glutSetWindowTitle(cTitle);
-        //printf("%s\n", cTitle);
         fpsCount = 0;
         fpsLimit = (int)((fps > 1.0f) ? fps : 1.0f);
-        //sdkResetTimer(&timer);
     }
 }
 
-void timerEvent(int value)
-{
+void timerEvent(int value) {
+
     glutPostRedisplay();
     glutTimerFunc(REFRESH_DELAY, timerEvent, 0);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//! Keyboard events handler
-////////////////////////////////////////////////////////////////////////////////
-void
-keyboard(unsigned char key, int /*x*/, int /*y*/)
+void keyboard(unsigned char key, int /*x*/, int /*y*/)
 {
     switch (key)
     {
@@ -428,11 +368,7 @@ void mainMenu(int i)
     keyboard((unsigned char) i, 0, 0);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//!
-////////////////////////////////////////////////////////////////////////////////
-void
-createTextureDst(GLuint *tex_cudaResult, unsigned int size_x, unsigned int size_y)
+void createTextureDst(GLuint *tex_cudaResult, unsigned int size_x, unsigned int size_y)
 {
     // create a texture
     glGenTextures(1, tex_cudaResult);
@@ -446,24 +382,17 @@ createTextureDst(GLuint *tex_cudaResult, unsigned int size_x, unsigned int size_
 
 #ifdef USE_TEXSUBIMAGE2D
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size_x, size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    SDK_CHECK_ERROR_GL();
 #else
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI_EXT, size_x, size_y, 0, GL_RGBA_INTEGER_EXT, GL_UNSIGNED_BYTE, NULL);
-    SDK_CHECK_ERROR_GL();
     // register this texture with CUDA
     checkCudaErrors(cudaGraphicsGLRegisterImage(&cuda_tex_result_resource, *tex_cudaResult,
                                                 GL_TEXTURE_2D, cudaGraphicsMapFlagsWriteDiscard));
 #endif
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//!
-////////////////////////////////////////////////////////////////////////////////
-void
-deleteTexture(GLuint *tex)
+void deleteTexture(GLuint *tex)
 {
     glDeleteTextures(1, tex);
-    SDK_CHECK_ERROR_GL();
 
     *tex = 0;
 }
@@ -480,35 +409,7 @@ main(int argc, char **argv)
 
     printf("%s Starting...\n\n", argv[0]);
 
-    //if (checkCmdLineFlag(argc, (const char **)argv, "file"))
-    //{
-
-    //    getCmdLineArgumentString(argc, (const char **)argv, "file", &ref_file);
-    //}
-
-    pArgc = &argc;
-    pArgv = argv;
-
-    // use command-line specified CUDA device, otherwise use device with highest Gflops/s
-    //if (checkCmdLineFlag(argc, (const char **)argv, "device"))
-    //{
-    //    printf("[%s]\n", argv[0]);
-    //    printf("   Does not explicitly support -device=n\n");
-    //    printf("   This sample requires OpenGL.  Only -file=<reference> are supported\n");
-    //    printf("exiting...\n");
-    //    exit(EXIT_WAIVED);
-    //}
-
-    //if (ref_file)
-    //{
-    //    printf("(Test with OpenGL verification)\n");
-    //    runStdProgram(argc, argv);
-    //}
-    //else
-    //{
-    //    printf("(Interactive OpenGL Demo)\n");
-        runStdProgram(argc, argv);
-    //}
+    renderloop(argc, argv);
 
     exit(EXIT_SUCCESS);
 }
@@ -518,7 +419,6 @@ main(int argc, char **argv)
 ////////////////////////////////////////////////////////////////////////////////
 void FreeResource()
 {
-    //sdkDeleteTimer(&timer);
 
     // unregister this buffer object with CUDA
     //    checkCudaErrors(cudaGraphicsUnregisterResource(cuda_tex_screen_resource));
@@ -543,14 +443,9 @@ void FreeResource()
 void Cleanup(int iExitCode)
 {
     FreeResource();
-    printf("PPM Images are %s\n", (iExitCode == EXIT_SUCCESS) ? "Matching" : "Not Matching");
     exit(iExitCode);
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-//!
-////////////////////////////////////////////////////////////////////////////////
 GLuint compileGLSLprogram(const char *vertex_shader_src, const char *fragment_shader_src)
 {
     GLuint v, f, p = 0;
@@ -626,10 +521,6 @@ GLuint compileGLSLprogram(const char *vertex_shader_src, const char *fragment_sh
 
     return p;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-//! Allocate the "render target" of CUDA
-////////////////////////////////////////////////////////////////////////////////
 #ifndef USE_TEXSUBIMAGE2D
 void initCUDABuffers()
 {
@@ -642,9 +533,6 @@ void initCUDABuffers()
 }
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-//!
-////////////////////////////////////////////////////////////////////////////////
 void initGLBuffers()
 {
     // create pbo
@@ -662,11 +550,7 @@ void initGLBuffers()
     SDK_CHECK_ERROR_GL();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//! Run standard demo loop with or without GL verification
-////////////////////////////////////////////////////////////////////////////////
-void
-runStdProgram(int argc, char **argv)
+void renderloop(int argc, char **argv)
 {
     // First initialize OpenGL context, so we can properly set the GL for CUDA.
     // This is necessary in order to achieve optimal performance with OpenGL/CUDA interop.
@@ -674,12 +558,6 @@ runStdProgram(int argc, char **argv)
     {
         return;
     }
-
-    // Now initialize CUDA context (GL context has been created already)
-    //findCudaDevice(argc, (const char **)argv);
-
-    //sdkCreateTimer(&timer);
-    //sdkResetTimer(&timer);
 
     // register callbacks
     glutDisplayFunc(display);
@@ -697,33 +575,13 @@ runStdProgram(int argc, char **argv)
     initCUDABuffers();
 #endif
 
-    // Creating the Auto-Validation Code
-    //if (ref_file)
-    //{
-    //    g_CheckRender = new CheckBackBuffer(window_width, window_height, 4);
-    //    g_CheckRender->setPixelFormat(GL_RGBA);
-    //    g_CheckRender->setExecPath(argv[0]);
-    //    g_CheckRender->EnableQAReadback(true);
-    //}
-
-    printf("\n"
-           "\tControls\n"
-           "\t(right click mouse button for Menu)\n"
-           "\t[esc] - Quit\n\n"
-          );
-
     // start rendering mainloop
     glutMainLoop();
 
     // Normally unused return path
     Cleanup(EXIT_SUCCESS);
 }
-
-////////////////////////////////////////////////////////////////////////////////
-//! Initialize GL
-////////////////////////////////////////////////////////////////////////////////
-bool
-initGL(int *argc, char **argv)
+bool initGL(int *argc, char **argv)
 {
     // Create GL context
     glutInit(argc, argv);

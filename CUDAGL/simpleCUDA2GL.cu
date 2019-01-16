@@ -46,10 +46,14 @@ cudaProcess(unsigned int *g_odata, int imgw)
     int y = blockIdx.y*bh + ty;
 
     unsigned int in = g_odata[y*imgw+x];
-    unsigned int out = (x / y + bw * bh) + in;
+    unsigned int out;
+    out = y*x+in;
+
+    //unsigned int out_idx = (in * 71) % (512 * 512);
     //uchar4 out = in+1;
-    //uchar4 c4 = out;//make_uchar4((x & 0x20)?100:0,0,(y & 0x20)?100:0,0);
+    //uchar4 c4 = make_uchar4((x & 0x20)?100:0,0,(y & 0x20)?100:0,0);
     g_odata[y*imgw+x] = out;//rgbToInt(c4.z, c4.y, c4.x);
+    //g_odata[out_idx] = out_idx;
 }
 
 extern "C" void
