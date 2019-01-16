@@ -41,7 +41,7 @@
 // CUDA utilities and system includes
 #include "helper_cuda.h"
 #include "helper_functions.h"
-#include "rendercheck_gl.h"
+//#include "rendercheck_gl.h"
 
 // Shared Library Test Functions
 #define MAX_EPSILON 10
@@ -52,7 +52,7 @@ const char *sSDKname = "simpleCUDA2GL";
 unsigned int g_TotalErrors = 0;
 
 // CheckFBO/BackBuffer class objects
-CheckRender *g_CheckRender = NULL;
+//CheckRender *g_CheckRender = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////
 // constants / global variables
@@ -343,28 +343,28 @@ display()
     glutSwapBuffers();
 
     // If specified, Check rendering against reference,
-    if (ref_file && g_CheckRender && g_CheckRender->IsQAReadback())
-    {
+    //if (ref_file && g_CheckRender && g_CheckRender->IsQAReadback())
+    //{
 
-        static int pass = 0;
+    //    static int pass = 0;
 
-        if (pass > 0)
-        {
-            g_CheckRender->readback(window_width, window_height);
-            char currentOutputPPM[256];
-            sprintf(currentOutputPPM, "kilt.ppm");
-            g_CheckRender->savePPM(currentOutputPPM, true, NULL);
+    //    if (pass > 0)
+    //    {
+    //        g_CheckRender->readback(window_width, window_height);
+    //        char currentOutputPPM[256];
+    //        sprintf(currentOutputPPM, "kilt.ppm");
+    //        g_CheckRender->savePPM(currentOutputPPM, true, NULL);
 
-            if (!g_CheckRender->PPMvsPPM(currentOutputPPM, sdkFindFilePath(ref_file, pArgv[0]), MAX_EPSILON, 0.30f))
-            {
-                g_TotalErrors++;
-            }
+    //        if (!g_CheckRender->PPMvsPPM(currentOutputPPM, sdkFindFilePath(ref_file, pArgv[0]), MAX_EPSILON, 0.30f))
+    //        {
+    //            g_TotalErrors++;
+    //        }
 
-            Cleanup((g_TotalErrors==0) ? EXIT_SUCCESS : EXIT_FAILURE);
-        }
+    //        Cleanup((g_TotalErrors==0) ? EXIT_SUCCESS : EXIT_FAILURE);
+    //    }
 
-        pass++;
-    }
+    //    pass++;
+    //}
 
     // Update fps counter, fps/title display and log
     if (++fpsCount == fpsLimit)
@@ -698,13 +698,13 @@ runStdProgram(int argc, char **argv)
 #endif
 
     // Creating the Auto-Validation Code
-    if (ref_file)
-    {
-        g_CheckRender = new CheckBackBuffer(window_width, window_height, 4);
-        g_CheckRender->setPixelFormat(GL_RGBA);
-        g_CheckRender->setExecPath(argv[0]);
-        g_CheckRender->EnableQAReadback(true);
-    }
+    //if (ref_file)
+    //{
+    //    g_CheckRender = new CheckBackBuffer(window_width, window_height, 4);
+    //    g_CheckRender->setPixelFormat(GL_RGBA);
+    //    g_CheckRender->setExecPath(argv[0]);
+    //    g_CheckRender->EnableQAReadback(true);
+    //}
 
     printf("\n"
            "\tControls\n"
