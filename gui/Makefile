@@ -1,24 +1,17 @@
 GCC=gcc
-TARGETS=test draw readbin cursor
+TARGETS=test draw readbin cursor points
 CFLAGS=-g -fPIC
 LFLAGS=-framework OpenGL -lpthread -lglfw
 OBJECTS:=$(patsubst %.c,%.o,$(wildcard *.c))
+
+.SUFFIXES:
 
 all: $(TARGETS)
 
 %.o: %.c
 	$(GCC) $(CFLAGS) -c $< -o $@
 
-cursor: cursor.o
-	$(GCC) -o $@ $(LFLAGS) $^
-
-readbin: readbin.o
-	$(GCC) -o $@ $(LFLAGS) $^
-
-draw: draw.o
-	$(GCC) -o $@ $(LFLAGS) $^
-
-test: test.o
+%: %.o
 	$(GCC) -o $@ $(LFLAGS) $^
 
 clean:
