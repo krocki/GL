@@ -9,7 +9,7 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 
-void *work(const char *args);
+void *work(void *args);
 
 #define NOGL 0
 
@@ -40,6 +40,18 @@ double get_time() {
   return (tv.tv_sec + tv.tv_usec * 1e-6);
 }
 
+int nsleep(long ms) {
+  struct timespec req, rem;
+  if (ms > 999) {
+    req.tv_sec = (int)(ms/1000);
+    req.tv_nsec = (ms - ((long)req.tv_sec*1000)) * 1000000;
+  }
+  else {
+    req.tv_sec=0;
+    req.tv_nsec=ms*1000000;
+  }
+  return nanosleep(&req, &rem);
+}
 #define bind_key(x,y) \
 { if (action == GLFW_PRESS && key == (x)) (y) = 1; if (action == GLFW_RELEASE && key == (x)) (y) = 0; if (y) {printf(#y "\n");} }
 
@@ -188,15 +200,15 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void *work(const char *args) {
+void *work(void *args) {
 
   int i = 0;
 
-  while (!gl_ok) usleep(10);
+  while (!gl_ok) nsleep(10);
   {
     while (gl_ok) {
       //printf("working %d\n", i++);
-      usleep(1000);
+      nsleep(100);
       //pix[i % (IM_W * IM_H * 3)] = rand() % 256;
     }
 

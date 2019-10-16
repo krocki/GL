@@ -11,12 +11,17 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 
-#define MAX_POINTS 32
+#define MAX_POINTS 256
 int points_len = 0;
 struct point {
   int x;
   int y;
 } points[MAX_POINTS];
+
+void func(void *args) {
+  int v = *((int*)args);
+  printf("func %d\n", v);
+}
 
 void insert_point(int x, int y) {
   if (points_len < MAX_POINTS) {
@@ -53,8 +58,20 @@ u8 debugmode = 0;
 u8 show_debug = 0;
 u8 pix[3*IM_W*IM_H];
 
+int closest = -1;
+int show_lines = 0;
+
 int WIDTH = 512;
 int HEIGHT = 512;
+
+void generate_data() {
+
+  while (points_len > 0) remove_point();
+
+  for (int i = 0; i < MAX_POINTS; ++i) {
+    insert_point(i, rand() % IM_H);
+  }
+}
 
 double t0; // global start time
 double get_time() {
@@ -78,20 +95,22 @@ int nsleep(long ms) {
 #define bind_key(x,y) \
 { if (action == GLFW_PRESS && key == (x)) (y) = 1; if (action == GLFW_RELEASE && key == (x)) (y) = 0; if (y) {printf(#y "\n");} }
 
-static void change_size_callback(GLFWwindow* window, int width, int height)
-{
+int mx=-1;
+int my=-1;
+
+static void change_size_callback(GLFWwindow* window, int width, int height) {
   WIDTH = width;
   HEIGHT = height;
 }
 
 static void error_callback(int error, const char* description) { }
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_R) generate_data();
+    if (action == GLFW_PRESS && key == GLFW_KEY_L) show_lines ^= 1;
+    if (action == GLFW_PRESS && key == GLFW_KEY_I) insert_point(mx,my);
     if (action == GLFW_PRESS && key == GLFW_KEY_U) remove_point();
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
-
-int mx=-1;
-int my=-1;
 
 static void mouse_pos_callback(GLFWwindow* window, double x, double y) {
   int xpos, ypos, width, height;
@@ -108,8 +127,10 @@ static void mouse_btn_callback(GLFWwindow* window, int button, int action, int m
     glfwGetCursorPos(window, &xpos, &ypos);
     int x = (int)(((double)IM_W*xpos)/(double)WIDTH);
     int y = (int)(-0.5+((double)IM_H*ypos)/(double)HEIGHT);
+    printf("closest %d\n", closest);
+    func(&closest);
     //printf("click at x=%.3f (%d), y=%.3f (%d)\n", xpos, x, ypos, y);
-    insert_point(x, y);
+    //insert_point(x, y);
   }
 }
 
@@ -134,7 +155,7 @@ static GLFWwindow* open_window(const char* title, GLFWwindow* share, int posX, i
     return window;
 }
 
-void draw_point(int x, int y, float r, float g, float b, float a) {
+void draw_point(double x, double y, float r, float g, float b, float a) {
 
     float incr_x = 1.0f/(float)IM_W; float incr_y = 1.0f/(float)IM_H;
     glColor4f(r, g, b, a);
@@ -145,7 +166,7 @@ void draw_point(int x, int y, float r, float g, float b, float a) {
     glVertex2f(i+incr_x, j+incr_y); glVertex2f(i,      j+incr_y);
 }
 
-void draw_line(int x0, int y0, int x1, int y1, float r, float g, float b, float a, float w) {
+void draw_line(double x0, double y0, double x1, double y1, float r, float g, float b, float a, float w) {
 
     glLineWidth(w);
     float incr_x = 1.0f/(float)IM_W; float incr_y = 1.0f/(float)IM_H;
@@ -160,6 +181,65 @@ void draw_line(int x0, int y0, int x1, int y1, float r, float g, float b, float 
     glVertex2f(i1, j1);
 }
 
+#define rescale(v, a, b) ((v)*(a)+(b))
+
+void draw_graph(struct point *p, double x0, double y0, double x1, double y1, float r, float g, float b, float a, float w) {
+
+    double wx = x1 - x0;
+    double wy = y1 - y0;
+    double sx = wx/(double)IM_W;
+    double sy = wy/(double)IM_H;
+
+    int show_border = 1;
+
+    if (1 == show_border) {
+      glBegin(GL_LINES);
+        draw_line(x0, y0, x1, y0, 0.2, 0.2, 0.2, 0.3, 0.5);
+        draw_line(x1, y0, x1, y1, 0.2, 0.2, 0.2, 0.3, 0.5);
+        draw_line(x1, y1, x0, y1, 0.2, 0.2, 0.2, 0.3, 0.5);
+        draw_line(x0, y1, x0, y0, 0.2, 0.2, 0.2, 0.3, 0.5);
+      glEnd();
+    }
+
+    glBegin(GL_QUADS);
+
+    for (int i = 0; i < points_len; ++i)
+      //draw_point(points[i].x, points[i].y, r, g, b, a);
+      draw_point(x0 + sx * (double)points[i].x, y0 + sy * (double)points[i].y, r, g, b, a);
+
+    glEnd();
+
+    if (1 == show_lines) {
+      glBegin(GL_LINES);
+      for (int i = 1; i < points_len; ++i) {
+        draw_line(
+            x0 + sx * points[i-1].x,
+            y0 + sy * points[i-1].y,
+            x0 + sx * points[i].x,
+            y0 + sy * points[i].y,
+            0, 0.5, 0.5, 0.5, 1);
+      }
+      glEnd();
+    }
+
+    int ii = -1;
+    double min_d = 0.0;
+    for (int i = 0; i < points_len; ++i) {
+      double xx = x0 + sx * points[i].x;
+      double yy = y0 + sy * points[i].y;
+      double d = sqrt((xx-mx)*(xx-mx)+(yy-my)*(yy-my));
+      if (ii < 0 || d < min_d ) {
+        ii = i; min_d = d;
+      }
+    }
+    glBegin(GL_LINES);
+    if (points_len > 0) {
+      closest = ii;
+      draw_line(mx, my, x0 + sx * points[ii].x, y0 + sy * points[ii].y, 0, 0, 1, 0.5, 2);
+    }
+    glEnd();
+}
+
 static void draw_quad()
 {
     int width, height;
@@ -170,19 +250,16 @@ static void draw_quad()
     glOrtho(0.f, 1.f, 0.f, 1.f, 0.f, 1.f);
     glBegin(GL_QUADS);
 
-    for (int i = 0; i < points_len; ++i)
-      draw_point(points[i].x, points[i].y, 0, 1, 0, 0.75);
 
+    glBegin(GL_QUADS);
     // cursor
     draw_point(mx, my, 1, 0, 0, 0.5);
     glEnd();
 
-    glBegin(GL_LINES);
 
-    for (int i = 0; i < points_len; ++i)
-      draw_line(mx, my, points[i].x, points[i].y, 0, 0, 1, 0.5, 2);
 
-    glEnd();
+    draw_graph(points, 5, 5, 200, 100, 0, 0.5, 0.5, 0.5, 1);
+
 };
 
 int display_init() {
