@@ -50,7 +50,7 @@ void print_vec(vec *v) {
     v->arr, v->cap, v->len
   );
   for (size_t i = 0; i < v->len; i++) {
-    printf("%zu: %p (%s)\n", i, v->arr[i].p, *v->arr[i].s);
+    printf("%zu: %p (%f)\n", i, v->arr[i].p, *v->arr[i].f);
   }
 }
 
@@ -62,12 +62,20 @@ void init(vec *v) {
 
 void release(vec *v) {
   v->len = 0, v->cap = 0;
+  for (int i=0; i<v->len; i++)
+  {
+    free(v->arr[i].p);
+    v->arr[i].p = NULL;
+  }
   free(v->arr), v->arr = NULL;
 }
 
 #define push_back(v_ptr, d_ptr) \
-  append(v_ptr, d_ptr, str(v_ptr), str(d_ptr), sizeof *(d_ptr)[0], sizeof *d_ptr);
+  append(v_ptr, d_ptr, str(v_ptr), str(d_ptr), 1, 1)
 
+//#define push_back(v_ptr, d_ptr) \
+//  append(v_ptr, d_ptr, str(v_ptr), str(d_ptr), sizeof *(d_ptr)[0], sizeof *d_ptr);
+//
 void append(vec *v, const void *data, const char *arg0, const char *arg1, const size_t arg1_size, const size_t arg1_len) {
 
   printf("append: %s %s size of elem: %zu %zu elems\n", arg0, arg1, arg1_size, arg1_len/arg1_size);
@@ -77,7 +85,9 @@ void append(vec *v, const void *data, const char *arg0, const char *arg1, const 
     v->arr = realloc(v->arr, v->cap * sizeof(*v->arr));
   }
 
+  //printf("v->arr[%zu].p = %p, %f\n", v->len, data, *((float*)data));
   v->arr[v->len++].p = (void *)data;
+
 }
 
 //void print_tree(bin_tree *bt) {
