@@ -1,5 +1,5 @@
 GCC=gcc
-TARGETS=test draw readbin cursor points nearest util button graph graph_util split
+TARGETS=test draw readbin cursor points nearest util button graph graph_util split quad
 CFLAGS=-g -fPIC --std=c11
 LFLAGS=-framework OpenGL -lpthread -lglfw
 OBJECTS:=$(patsubst %.c,%.o,$(wildcard *.c))
