@@ -11,6 +11,16 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 
+typedef struct point {
+  union {
+    float a[2];
+    struct {
+      float x;
+      float y;
+    };
+  };
+} pt;
+
 #define Q_CAP 4
 typedef struct quad_node {
   struct {
@@ -18,10 +28,7 @@ typedef struct quad_node {
     float yc;
     float r;
   } bb;
-  struct {
-    float x;
-    float y;
-  } points[Q_CAP];
+  pt points[Q_CAP];
   size_t points_len;
   struct quad_node *nw, *ne, *sw, *se;
 } quad_node;
@@ -37,12 +44,9 @@ int insert(quad_node *q, float x, float y) {
         (q->bb.yc-q->bb.r) > y ||
         (q->bb.yc+q->bb.r) < y) return -1;
     if (q->points_len < Q_CAP) {
-      q->points[q->points_len].x = x;
-      q->points[q->points_len].y = y;
-      q->points_len++;
+      q->points[q->points_len++] = (pt){.x=x,.y=y};
       return 0;
     } else {
-      puts("reached max\n");
       if (NULL == q->nw) {
 
         q->nw = calloc(1, sizeof(quad_node));
@@ -77,24 +81,6 @@ int insert(quad_node *q, float x, float y) {
   }
   return res;
 }
-//#define MAX_POINTS 32
-//int points_len = 0;
-//struct point {
-//  int x;
-//  int y;
-//} points[MAX_POINTS];
-//
-//void insert_point(int x, int y) {
-//  if (points_len < MAX_POINTS) {
-//    points[points_len++] = (struct point){ .x=x, .y=y };
-//  }
-//}
-
-//void remove_point() {
-//  if (points_len > 0) {
-//    points_len--;
-//  }
-//}
 
 void *work(void *args);
 
@@ -300,7 +286,7 @@ int display_init() {
   //glfwSetErrorCallback(error_callback);
   if (!glfwInit()) return -1;
 
-  window = open_window("NES", NULL, OFFSET, OFFSET);
+  window = open_window("quad", NULL, OFFSET, OFFSET);
   if (!window) { glfwTerminate(); return -1; }
 
   glfwGetWindowPos(window, &x, &y);
