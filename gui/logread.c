@@ -6,6 +6,7 @@
 #include <math.h>
 #include <regex.h>
 #include <assert.h>
+#include <timer.h>
 #include "vec.h"
 
 #define NOGL 1
@@ -18,9 +19,58 @@ regex_t re(const char *str_regex) {
   return re;
 }
 
-vec *speed = NULL;
-vec *x_axis = NULL;
-vec *y_axis = NULL;
+vec *readall(const char *filename) {
+  FILE *f = fopen(filename, "r");
+  if (!f) fprintf(stderr, "couldn't read %s\n", filename);
+
+  int ch, nlines, ncols = 1;
+
+  do {
+    ch = fgetc(f);
+    if (ch == '\n') nlines++;
+  } while (ch != EOF);
+  rewind(f);
+
+  do {
+    ch = fgetc(f);
+    if (ch == ',') ncols++;
+  } while (ch != '\n');
+  rewind(f);
+
+  vec *v;
+  v = calloc(1, sizeof(vec));
+  init(v);
+
+  char *lines[nlines];
+  size_t len = 0;
+  size_t header = 1;
+  size_t row = 0;
+  char buf[256];
+  char *delim = ",";
+
+  size_t tokens = 0;
+
+  while (fgets(buf, 256, f)) {
+    int field_no = 0;
+    char *field = strtok(buf, delim);
+    vec *vv = calloc(1, sizeof(vec));
+    init(vv);
+    while (field) {
+      if (row == 0) { /* header */ }
+      char *token = strdup(field);
+      push_back(vv, token);
+      field_no++;
+      tokens++;
+      field = strtok(NULL, delim);
+    }
+    push_back(v, vv);
+    row++;
+  }
+  fclose(f);
+  printf("read %zu lines, %zu tokens\n", row, tokens);
+
+  return v;
+}
 
 vec *read(const char *filename, const char *symbol) {
 
@@ -69,7 +119,7 @@ vec *read(const char *filename, const char *symbol) {
         if (field_no == match_idx) {
           float *f = malloc(sizeof(float));
           *f = atof(field);
-          printf("%p\n", f);
+          //printf("%p\n", f);
           push_back(v, f);
         }
       }
@@ -390,15 +440,29 @@ void *work(void *args) {
 
 #if NOGL
   char c;
-  vec *data = read((const char *)args, "Time.*");
+  //vec *data = read((const char *)args, "Time.*");
+  vec *data;
+  timeit(data = readall((const char *)args));
+  size_t j0, j1;
   size_t tail = 10;
   size_t off = data->len-tail;
-  while (scanf("%zu %zu", &off, &tail)) {
-    for (size_t i = off; i<off+tail; i++) {
-      printf("%6zu: t=%9.4f\n", i, *(float*)data->arr[i].p);
+  while (scanf("%zu %zu %zu %zu", &off, &tail, &j0, &j1)) {
+    double ts=get_time();
+    unsigned long long cs=rdtsc();
+    vec *row = (vec*)(data->arr[0].p);
+    printf("----- %2zu : '%10s' %2zu : '%10s'\n", j0, (char*)(row->arr[j0].p), j1, (char*)(row->arr[j1].p));
+    for (size_t i = off+1; i<(off+1)+tail; i++) {
+      row = (vec*)(data->arr[i].p);
+      printf("%5zu %2zu : '%10s' %2zu : '%10s'\n", i, j0, (char*)(row->arr[j0].p), j1, (char*)(row->arr[j1].p));
     }
-    printf("press q to quit\n");
+    unsigned long long ce=rdtsc();
+    double te=get_time();
+    printf("%f s, %llu cycles\n", te-ts, ce-cs);
   }
+
+  for (size_t i = 0; i < data->len; i++)
+    release((vec*)(data->arr[i].p));
+  release(data);
 //#else
 //  while (!gl_ok) nsleep(10);
 //  {
