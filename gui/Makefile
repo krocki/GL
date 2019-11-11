@@ -1,6 +1,7 @@
 GCC=gcc
 TARGETS=logread test draw readbin cursor points nearest util button graph graph_util split quad quad_orig
-CFLAGS=-g -fPIC --std=c11
+CFLAGS=-g3 -fPIC --std=c11
+INCLUDES=../../clib
 LFLAGS=-framework OpenGL -lpthread -lglfw
 OBJECTS:=$(patsubst %.c,%.o,$(wildcard *.c))
 
@@ -9,7 +10,7 @@ OBJECTS:=$(patsubst %.c,%.o,$(wildcard *.c))
 all: $(TARGETS)
 
 %.o: %.c
-	$(GCC) $(CFLAGS) -c $< -o $@
+	$(GCC) -I$(INCLUDES) $(CFLAGS) -c $< -o $@
 
 %: %.o
 	$(GCC) -o $@ $(LFLAGS) $^

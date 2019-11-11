@@ -78,7 +78,7 @@ void release(vec *v) {
 //
 void append(vec *v, const void *data, const char *arg0, const char *arg1, const size_t arg1_size, const size_t arg1_len) {
 
-  printf("append: %s %s size of elem: %zu %zu elems\n", arg0, arg1, arg1_size, arg1_len/arg1_size);
+  //printf("append: %s %s size of elem: %zu %zu elems\n", arg0, arg1, arg1_size, arg1_len/arg1_size);
 
   if (v->len == v->cap) {
     v->cap *= 2;
